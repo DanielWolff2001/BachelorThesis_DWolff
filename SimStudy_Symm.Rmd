@@ -1,10 +1,3 @@
----
-title: "SimStudy_Test"
-author: "Daniel Wolff"
-date: "2024-06-21"
-output: html_document
----
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -13,17 +6,17 @@ library(gRbase)
 library(gRc)
 
 # Define the directory containing the CSV files with clustering results
-input_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Clustering_Results'
+input_dir <- 'Clustering_Results'
 
 # List all CSV files in the directory
 vcc_files <- list.files(path = input_dir, pattern = "clustered_vertices", full.names = TRUE)
 ecc_files <- list.files(path = input_dir, pattern = "clustered_edges", full.names = TRUE)
 
 # Define the directory containing the original data
-data_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples'
+data_dir <- 'SimStudy_Samples'
 
 # Define the output directory for saving the results
-output_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+output_dir <- 'Final_Model'
 dir.create(output_dir, showWarnings = FALSE)
 
 # List all CSV files with the original data
