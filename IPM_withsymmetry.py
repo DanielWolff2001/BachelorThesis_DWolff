@@ -67,7 +67,7 @@ def calculate_log_likelihood(C, A, W, n):
     return part1 + part2 - part3
     
 # Load the dataset
-file_path = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/gaussian3d_250samples.csv'
+file_path = 'gaussian3d_250samples.csv'
 sample = pd.read_csv(file_path).values
 size = sample.shape[1]  # Number of variables
 n = sample.shape[0]  # Number of observations
@@ -94,5 +94,3 @@ A_final, C_final = estimation_algorithm(E, W, A_init, C_init, f, E, V, zero_edge
 print("Final A:\n", A_final)
 print("Final C:\n", C_final)
 print('logL: ', calculate_log_likelihood(C_final, A_final, W, n))
-
-print(A_final@C_final@A_final)
