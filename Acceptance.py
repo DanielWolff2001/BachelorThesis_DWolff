@@ -1,8 +1,8 @@
 import pandas as pd
 
 # Load the CSV files
-merged_model_results = pd.read_csv('/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/merged_model_results.csv')
-acceptance_summary = pd.read_csv('/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/acceptance_summary.csv')
+merged_model_results = pd.read_csv('merged_model_results.csv')
+acceptance_summary = pd.read_csv('acceptance_summary.csv')
 
 # Define the true edges and symmetries from the original model
 true_edges = {"~X1:X5", "~X3:X4", "~X2:X5", "~X2:X6", "~X4:X5", "~X2:X3", "~X5:X6", "~X1:X2", "~X1:X4"}
@@ -59,7 +59,7 @@ merged_model_results['correct_ecc_edges'] = correct_ecc_edges_count
 merged_model_results['correct_ecc_symmetries'] = correct_ecc_symmetries_count
 
 # Save the updated merged model results to a new CSV file
-comparison_results_file = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/comparison_results.csv'
+comparison_results_file = 'comparison_results.csv'
 merged_model_results.to_csv(comparison_results_file, index=False)
 
 # Calculate the overall acceptance rates based on the acceptance summary
@@ -95,7 +95,7 @@ acceptance_rates['correct_ecc_edges_avg'] *= 100
 acceptance_rates['correct_ecc_symmetries_avg'] *= 100
 
 # Save the final acceptance rates to a new CSV file
-final_acceptance_rates_file = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/final_acceptance_rates.csv'
+final_acceptance_rates_file = 'final_acceptance_rates.csv'
 acceptance_rates.to_csv(final_acceptance_rates_file, index=False)
 
 print("Comparison results saved successfully.")
