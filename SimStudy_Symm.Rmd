@@ -1,0 +1,177 @@
+---
+title: "SimStudy_Test"
+author: "Daniel Wolff"
+date: "2024-06-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(gRbase)
+library(gRc)
+
+# Define the directory containing the CSV files with clustering results
+input_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Clustering_Results'
+
+# List all CSV files in the directory
+vcc_files <- list.files(path = input_dir, pattern = "clustered_vertices", full.names = TRUE)
+ecc_files <- list.files(path = input_dir, pattern = "clustered_edges", full.names = TRUE)
+
+# Define the directory containing the original data
+data_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples'
+
+# Define the output directory for saving the results
+output_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+dir.create(output_dir, showWarnings = FALSE)
+
+# List all CSV files with the original data
+data_files <- list.files(path = data_dir, pattern = "*.csv", full.names = TRUE)
+
+# Function to read a CSV file and create vcc and ecc
+create_vcc_ecc <- function(file_path) {
+  clusters <- read.csv(file_path, stringsAsFactors = FALSE)
+  
+  # Separate into edges and vertices based on the file name
+  if (grepl("clustered_edges", file_path)) {
+    cluster_type <- "edges"
+  } else if (grepl("clustered_vertices", file_path)) {
+    cluster_type <- "vertices"
+  } else {
+    stop("Unknown cluster type in file name")
+  }
+  
+  clusters_list <- lapply(clusters[, 1], function(x) strsplit(x, ", ")[[1]])
+  
+  if (cluster_type == "edges") {
+    # Ensure each edge is stored in a canonical form
+    canonicalize_edge <- function(edge) {
+      nodes <- unlist(strsplit(edge, ":"))
+      nodes <- sort(nodes)
+      return(paste(nodes, collapse = ":"))
+    }
+    
+    ecc <- lapply(clusters_list, function(cluster) {
+      cleaned_cluster <- gsub("^~", "", cluster)
+      canonical_edges <- unique(sapply(cleaned_cluster, canonicalize_edge))
+      formula <- as.formula(paste("~", paste(canonical_edges, collapse = " + "), sep = ""))
+      return(formula)
+    })
+    return(ecc)
+  } else if (cluster_type == "vertices") {
+    vcc <- lapply(clusters_list, function(cluster) {
+      cleaned_cluster <- gsub("^~", "", cluster)
+      formula <- as.formula(paste("~", paste(cleaned_cluster, collapse = " + "), sep = ""))
+      return(formula)
+    })
+    return(vcc)
+  }
+}
+
+# Process each CSV file to create vcc and ecc
+vcc_list <- lapply(vcc_files, create_vcc_ecc)
+ecc_list <- lapply(ecc_files, create_vcc_ecc)
+
+# Function to create and save the rcox model
+create_rcox_model <- function(data_file, vcc_clusters, ecc_clusters, threshold) {
+  data <- read.csv(data_file, header = TRUE)
+  colnames(data) <- paste0("X", 1:ncol(data))
+  
+  # Debugging: Print data dimensions and column names
+  cat("Data dimensions: ", dim(data), "\n")
+  cat("Data column names: ", colnames(data), "\n")
+  
+  # Debugging: Print vcc and ecc before creating the model
+  cat("Creating rcox model with the following vcc and ecc:\n")
+  print(vcc_clusters)
+  print(ecc_clusters)
+  
+  # Create the rcox model
+  model <- tryCatch({
+    rcox(vcc = vcc_clusters, ecc = ecc_clusters, type = 'rcor', data = data)
+  }, error = function(e) {
+    cat("Error in creating rcox model:\n")
+    print(e)
+    return(NULL)
+  })
+  
+  if (!is.null(model)) {
+    cat("Successfully created rcox model.\n")
+    model_summary <- summary(model, type = 'KC')
+    logL <- model_summary$logL
+    
+    result <- list(
+      data_file = data_file,
+      threshold = threshold,
+      logL = logL,
+      vcc = vcc_clusters,
+      ecc = ecc_clusters
+    )
+    
+    return(result)
+  } else {
+    cat("Model creation failed for data file:", data_file, "\n")
+    return(NULL)
+  }
+}
+
+# Define thresholds
+thresholds <- c("0_05", "0_15", "0_25")
+
+# Ensure there are enough clustering files for each data file and threshold combination
+if (length(vcc_list) != length(data_files) * length(thresholds) || length(ecc_list) != length(data_files) * length(thresholds)) {
+  stop("Mismatch in the number of clustering result files and data files")
+}
+
+# Initialize a list to store results
+results_list <- list()
+
+# Loop through each data file and create rcox models for each threshold
+for (i in 1:length(data_files)) {
+  data_file <- data_files[i]
+  for (j in 1:length(thresholds)) {
+    threshold <- thresholds[j]
+    vcc_clusters <- vcc_list[[(i - 1) * length(thresholds) + j]]
+    ecc_clusters <- ecc_list[[(i - 1) * length(thresholds) + j]]
+    
+    result <- create_rcox_model(data_file, vcc_clusters, ecc_clusters, threshold)
+    if (!is.null(result)) {
+      results_list <- append(results_list, list(result))
+    }
+  }
+}
+
+cat("Models created and processed successfully.\n")
+
+# Create a data frame from the results
+results_df <- do.call(rbind, lapply(results_list, function(result) {
+  data.frame(
+    Sample = basename(result$data_file),
+    Threshold = result$threshold,
+    LogL = result$logL,
+    VCC = paste(sapply(result$vcc, deparse), collapse = "; "),
+    ECC = paste(sapply(result$ecc, deparse), collapse = "; "),
+    stringsAsFactors = FALSE
+  )
+}))
+
+# Save the results to a CSV file
+results_file <- file.path(output_dir, "final_model_results.csv")
+write.csv(results_df, results_file, row.names = FALSE)
+
+cat("Results saved to", results_file, "\n")
+
+```
+
+```{r}
+# print(ecc_stepwise_50_1)
+# print(deleted_edges_50_1)
+# plot(m1_50_1)
+# m1_summary <- summary(m1_50_1, type = 'KC')
+# partial_corr_matrix <- as.matrix(m1_summary$K)
+# print(partial_corr_matrix)
+m6 <- rcox(vcc = vcc_clusters, ecc = ecc_clusters, type = 'rcor', data = data)
+summary(m6, type = 'KC')
+plot(m6)
+```

@@ -1,0 +1,156 @@
+---
+title: "SimStudy_Test"
+author: "Daniel Wolff"
+date: "2024-06-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(gRbase)
+library(gRim)
+library(gRc)
+library(stats)
+
+# Define the directory containing the CSV files
+input_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples'
+
+# Define the output directories for saving the K matrices and logL values
+k_matrices_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/K_Matrices'
+logL_output_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+dimension_output_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+
+
+# Create the output directories if they do not exist
+if (!dir.exists(k_matrices_dir)) {
+  dir.create(k_matrices_dir, recursive = TRUE)
+}
+if (!dir.exists(logL_output_dir)) {
+  dir.create(logL_output_dir, recursive = TRUE)
+}
+
+# List all CSV files in the directory
+csv_files <- list.files(path = input_dir, pattern = "*.csv", full.names = TRUE)
+
+# Define vertex color classes (vcc)
+vcc <- list(~X1, ~X2, ~X3, ~X4, ~X5, ~X6)
+
+# Define the initial full ecc list (eccfull)
+eccfull <- list(~X1:X2, ~X1:X3, ~X1:X4, ~X1:X5, ~X1:X6, 
+                ~X2:X3, ~X2:X4, ~X2:X5, ~X2:X6, 
+                ~X3:X4, ~X3:X5, ~X3:X6, 
+                ~X4:X5, ~X4:X6, 
+                ~X5:X6)
+
+# Function to read a CSV file and set column names
+read_and_set_colnames <- function(file_path) {
+  data <- read.csv(file_path, header = TRUE)
+  colnames(data) <- paste0('X', 1:ncol(data))
+  return(data)
+}
+
+# Function to parse stepwise output and extract deleted edges
+parse_stepwise_output <- function(stepwise_output) {
+  deleted_edges <- grep("Edge deleted:", stepwise_output, value = TRUE)
+  deleted_edges <- sub(".*Edge deleted: ", "", deleted_edges)
+  deleted_edges <- strsplit(deleted_edges, ",")
+  deleted_edges <- lapply(deleted_edges, function(x) {
+    x1 <- sub("X", "", trimws(x[1]))
+    x2 <- sub("X", "", trimws(x[2]))
+    edge <- as.formula(paste0("~X", x1, ":X", x2))
+    reverse_edge <- as.formula(paste0("~X", x2, ":X", x1))
+    list(edge, reverse_edge)
+  })
+  # Flatten the list of lists
+  deleted_edges <- unlist(deleted_edges, recursive = FALSE)
+  return(deleted_edges)
+}
+
+# Function to remove deleted edges from the eccfull list
+remove_deleted_edges <- function(eccfull, deleted_edges) {
+  eccfull_strings <- sapply(eccfull, deparse)
+  deleted_edges_strings <- sapply(deleted_edges, deparse)
+  ecc_stepwise <- eccfull[!eccfull_strings %in% deleted_edges_strings]
+  return(ecc_stepwise)
+}
+
+# Initialize a data frame to store logL values
+logL_results <- data.frame(
+  Sample = character(),
+  LogL = numeric(),
+  stringsAsFactors = FALSE
+)
+
+dimension_results <- data.frame(
+  Sample = character(),
+  Dimension = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Function to perform the additional calculations on a dataset
+perform_calculations <- function(data, sample_size, sample_number) {
+  S_dt <- cov.wt(data, method = 'ML')$cov
+  K_dt <- solve(S_dt)
+  PC_dt <- cov2pcor(S_dt)
+  sat_dt <- cmod(~.^., data = data)
+  
+  # Print the dataset name before performing stepwise selection
+  cat(sprintf("Processing dataset: sample_size_%s_sample_%s\n", sample_size, sample_number))
+  
+  # Capture the output of the stepwise function
+  stepwise_output <- capture.output(stepwise(sat_dt, details = 1, search = "headlong", criterion = "test", steps = 1000, alpha = 0.05))
+  
+  # Parse the stepwise output to get the deleted edges
+  deleted_edges <- parse_stepwise_output(stepwise_output)
+  
+  # Create the new ecc by removing the deleted edges from eccfull
+  ecc_stepwise <- remove_deleted_edges(eccfull, deleted_edges)
+  
+  # Fit the model with the new ecc
+  m1 <- rcox(vcc = vcc, ecc = ecc_stepwise, type = 'rcor', data = data)
+  
+  # Extract the partial correlation matrix and logL from the summary
+  m1_summary <- summary(m1, type = 'KC')
+  partial_corr_matrix <- m1_summary$K
+  logL_value <- m1_summary$logL
+  dimension_value <- m1_summary$dimension
+  
+  # Save the partial correlation matrix as a CSV file
+  output_file_path <- file.path(k_matrices_dir, paste0("K_matrix_", sample_size, "_", sample_number, ".csv"))
+  write.csv(partial_corr_matrix, output_file_path, row.names = TRUE)
+  
+  # Add logL and dimension values to the respective results data frames
+  logL_results <<- rbind(logL_results, data.frame(Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), LogL = logL_value))
+  dimension_results <<- rbind(dimension_results, data.frame(Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), Dimension = dimension_value))
+  
+  # Print message to confirm saving the files
+  cat(sprintf("Saved K matrix to %s\n", output_file_path))
+}
+
+# Read each CSV file, set column names, and perform calculations
+for (file_path in csv_files) {
+  data <- read_and_set_colnames(file_path)
+  
+  # Extract sample size and sample number from the file name
+  file_name <- basename(file_path)
+  sample_size <- sub("sample_size_(\\d+)_sample_(\\d+).csv", "\\1", file_name)
+  sample_number <- sub("sample_size_(\\d+)_sample_(\\d+).csv", "\\2", file_name)
+  
+  # Perform calculations and assign results to variables
+  perform_calculations(data, sample_size, sample_number)
+}
+
+# Save the logL results to a single CSV file
+logL_results_file <- file.path(logL_output_dir, "logL_results.csv")
+write.csv(logL_results, logL_results_file, row.names = FALSE)
+# Save the dimension results to a single CSV file
+dimension_results_file <- file.path(dimension_output_dir, "dimension_results.csv")
+write.csv(dimension_results, dimension_results_file, row.names = FALSE)
+
+
+cat("Calculations completed for all datasets successfully.\n")
+cat("LogL results saved to", logL_results_file, "\n")
+cat("Dimension results saved to", dimension_results_file, "\n")
+```

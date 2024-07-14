@@ -1,0 +1,201 @@
+---
+title: "SimStudy_Test"
+author: "Daniel Wolff"
+date: "2024-06-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(dplyr)
+
+# Define the directory containing the result files
+result_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+
+# Load the final_model_results.csv, logL_results.csv, and dimension_results.csv files
+final_model_results_file <- file.path(result_dir, "final_model_results.csv")
+logL_results_file <- file.path(result_dir, "logL_results.csv")
+dimension_results_file <- file.path(result_dir, "dimension_results.csv")
+
+final_model_results <- read.csv(final_model_results_file, stringsAsFactors = FALSE)
+logL_results <- read.csv(logL_results_file, stringsAsFactors = FALSE)
+dimension_results <- read.csv(dimension_results_file, stringsAsFactors = FALSE)
+
+# Ensure that all data frames have a common column to join on
+final_model_results$Sample <- gsub("\\.csv$", "", final_model_results$Sample)
+logL_results$Sample <- gsub("\\.csv$", "", logL_results$Sample)
+dimension_results$Sample <- gsub("\\.csv$", "", dimension_results$Sample)
+
+# Debugging: Print the first few rows of each data frame to check for alignment issues
+cat("Final Model Results:\n")
+print(head(final_model_results))
+cat("LogL Results:\n")
+print(head(logL_results))
+cat("Dimension Results:\n")
+print(head(dimension_results))
+
+# Merge the final_model_results with logL_results and dimension_results based on the Sample column
+merged_results <- final_model_results %>%
+  left_join(logL_results, by = "Sample") %>%
+  left_join(dimension_results, by = "Sample")
+
+# Debugging: Print the structure and first few rows of the merged data frame
+cat("Merged Results Structure:\n")
+str(merged_results)
+cat("Merged Results:\n")
+print(head(merged_results))
+
+# Rename the log-likelihood columns for clarity
+colnames(merged_results)[which(names(merged_results) == "LogL.x")] <- "final_model_logL"
+colnames(merged_results)[which(names(merged_results) == "LogL.y")] <- "deleted_edges_logL"
+
+# Calculate LR_statistic as the difference between final_model_logL and deleted_edges_logL
+merged_results <- merged_results %>%
+  mutate(LR_statistic = deleted_edges_logL - final_model_logL)
+
+# Calculate new_dim as the total count of elements in VCC and ECC
+merged_results <- merged_results %>%
+  rowwise() %>%
+  mutate(new_dim = length(unlist(strsplit(VCC, ";"))) + length(unlist(strsplit(ECC, ";"))))
+
+# Ensure dimension and new_dim are numeric
+merged_results$Dimension <- as.numeric(merged_results$Dimension)
+merged_results$new_dim <- as.numeric(merged_results$new_dim)
+
+# Calculate df as the difference between Dimension and new_dim
+merged_results <- merged_results %>%
+  mutate(df = Dimension - new_dim)
+
+# Calculate Chi as the p-value of the LRT
+merged_results <- merged_results %>%
+  mutate(Chi = pchisq(LR_statistic, df, lower.tail = FALSE))
+
+# Save the merged results to a single CSV file
+merged_results_file <- file.path(result_dir, "merged_model_results.csv")
+write.csv(merged_results, merged_results_file, row.names = FALSE)
+
+cat("Merged results saved to", merged_results_file, "\n")
+
+```
+
+```{r}
+library(dplyr)
+
+# Define the directory containing the result files
+result_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+
+# Load the merged_model_results.csv file
+merged_results_file <- file.path(result_dir, "merged_model_results.csv")
+merged_results <- read.csv(merged_results_file, stringsAsFactors = FALSE)
+
+# Calculate acceptance (p-value < 0.05)
+merged_results$accepted <- merged_results$Chi > 0.05
+
+# Summarize acceptance rate per threshold and sample size
+acceptance_summary <- merged_results %>%
+  group_by(Threshold, Sample_Size = gsub("sample_size_([0-9]+)_sample_[0-9]+", "\\1", Sample)) %>%
+  summarize(
+    total_models = n(),
+    accepted_models = sum(accepted),
+    acceptance_rate = (accepted_models / total_models) * 100
+  ) %>%
+  arrange(Sample_Size, Threshold)
+
+# Save the acceptance summary to a CSV file
+acceptance_summary_file <- file.path(result_dir, "acceptance_summary.csv")
+write.csv(acceptance_summary, acceptance_summary_file, row.names = FALSE)
+
+cat("Acceptance summary saved to", acceptance_summary_file, "\n")
+
+```
+
+
+```{r}
+library(gRbase)
+library(gRc)
+library(dplyr)
+
+# Define the directories
+data_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples'
+result_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+plot_dir <- file.path(result_dir, "Plots")
+
+# Create the plot directory if it does not exist
+if (!dir.exists(plot_dir)) {
+  dir.create(plot_dir, recursive = TRUE)
+}
+# Load the merged results
+merged_results_file <- file.path(result_dir, "merged_model_results.csv")
+merged_results <- read.csv(merged_results_file, stringsAsFactors = FALSE)
+
+# Function to create vcc and ecc from the merged results
+create_vcc_ecc <- function(vcc_str, ecc_str) {
+  vcc_list <- strsplit(vcc_str, "; ")[[1]]
+  ecc_list <- strsplit(ecc_str, "; ")[[1]]
+  
+  vcc <- lapply(vcc_list, function(x) as.formula(paste(x)))
+  ecc <- lapply(ecc_list, function(x) as.formula(paste(x)))
+  
+  return(list(vcc = vcc, ecc = ecc))
+}
+
+# Function to plot the graph and provide summary
+plot_and_summarize <- function(data_file, vcc, ecc) {
+  data <- read.csv(data_file, header = TRUE)
+  colnames(data) <- paste0("X", 1:ncol(data))
+  
+  model <- rcox(vcc = vcc, ecc = ecc, type = 'rcor', data = data)
+  
+  summary_model <- summary(model, type = 'KC')
+  print(summary_model)
+  
+  plot(model)
+}
+
+# Select a specific sample size, sample number, and threshold level
+selected_sample_size <- 50
+selected_sample_number <- 1
+selected_threshold <- "0_05"
+
+# Filter the merged results for the selected values
+selected_result <- merged_results %>%
+  filter(Sample == paste0("sample_size_", selected_sample_size, "_sample_", selected_sample_number)) %>%
+  filter(Threshold == selected_threshold)
+
+# Check if we have a valid result
+if (nrow(selected_result) == 1) {
+  # Get the corresponding data file
+  data_file <- file.path(data_dir, paste0("sample_size_", selected_sample_size, "_sample_", selected_sample_number, ".csv"))
+  
+  # Create vcc and ecc from the selected result
+  vcc_ecc <- create_vcc_ecc(selected_result$VCC, selected_result$ECC)
+  
+  # Plot the graph and provide the summary
+  plot_and_summarize(data_file, vcc_ecc$vcc, vcc_ecc$ecc)
+} else {
+  cat("No matching result found for the selected sample size, sample number, and threshold level.\n")
+}
+
+# Function to plot the graph, provide summary, and save the plot as a PNG file
+plot_and_summarize <- function(data_file, vcc, ecc, sample, threshold) {
+  data <- read.csv(data_file, header = TRUE)
+  colnames(data) <- paste0("X", 1:ncol(data))
+  
+  model <- rcox(vcc = vcc, ecc = ecc, type = 'rcor', data = data)
+  
+  summary_model <- summary(model, type = 'KC')
+  print(summary_model)
+  
+  plot_file <- file.path(plot_dir, paste0(sample, "_threshold_", threshold, "_model_plot.png"))
+  
+  png(plot_file)
+  plot(model)
+  dev.off()
+  
+  cat("Plot saved to", plot_file, "\n")
+}
+
+plot_and_summarize(data_file, vcc_ecc$vcc, vcc_ecc$ecc, selected_result$Sample, selected_threshold)
+```

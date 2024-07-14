@@ -1,0 +1,48 @@
+---
+title: "bep3dmultivariate"
+author: "Daniel Wolff"
+date: "2024-04-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(gRbase)
+library(gRc)
+# data <- read.csv('gaussian3d_250samples.csv', header = TRUE)
+data <- read.csv('/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/gaussian3d_250samples.csv', header = TRUE)
+colnames(data) <- c('X1', 'X2', 'X3')
+```
+
+```{r}
+m0 <- rcox(~X1:X2:X3,type = 'rcor', data = data)
+plot(m0)
+summary(m0, type = 'KC')
+
+S.dt <- cov.wt(data, method = 'ML')$cov
+K.dt <- solve(S.dt)
+#round(100*K.dt)
+PC.dt <- cov2pcor(S.dt)
+round(100*PC.dt)
+sat.dt <- cmod(~.^., data = data)
+test.dt <- stepwise(sat.dt, details = 1, search = "headlong", "test", steps = "1000", alpha = 0.05)
+```
+
+
+```{r}
+vcc = list(~X1, ~X2, ~X3)
+ecc = list(~X1:X3, ~X2:X3)
+vccsym = list(~X1, ~X2 + X3)
+eccsym = list(~X1:X3 + X2:X3)
+
+
+m1 <- rcox(vcc = vcc, ecc = ecc, data = data, type = "rcor") #no symmetries
+m2 <- rcox(vcc = vccsym, ecc = eccsym, data = data, type = "rcor") #symmetries included
+plot(m1)
+plot(m2)
+summary(m1, type = 'KC')
+summary(m2, type = 'KC')
+```

@@ -1,0 +1,77 @@
+---
+title: "mvn mardia"
+author: "Daniel Wolff"
+date: "2024-07-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Install and load necessary packages
+library(MVN)
+library(mvnormalTest)
+library(readr)
+library(copula)
+library(dplyr)
+library(stats)
+library(ggplot2)
+library(GGally)
+# Define the path to your CSV file
+# /Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/eeg_sample_1000_c.csv
+# /Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_uniform.csv
+# /Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_edited.csv
+file_path <- "/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_edited.csv"
+file_path2 <- "/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/eeg_sample_1000_c.csv"
+file_path3 <- "/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples/sample_size_1000_sample_57.csv"
+# Read the data
+data <- read_csv(file_path, show_col_types = FALSE)
+
+data2 <-read_csv(file_path2, show_col_types = FALSE)
+data3 <-read_csv(file_path2, show_col_types = FALSE)
+data2 <- data2 %>% select(-event)
+
+datan <- read_csv(file_path3, show_col_types = FALSE)
+datan <- as.data.frame(datan)
+
+# Transpose the data to have observations in rows and variables in columns
+# data <- t(data)
+
+# Convert the transposed data to a data frame
+data <- as.data.frame(data)
+
+data2 <- as.data.frame(pobs(data2))
+data2 <- as.data.frame(apply(data2, 2, function(x) qnorm(x)))
+
+
+# 
+# plot <- ggpairs(data2,
+#         upper = list(continuous = wrap("cor", size = 10)),  # Increase the size of correlation coefficients
+#         lower = list(continuous = wrap("points", alpha = 0.5)),
+#         diag = list(continuous = wrap("densityDiag")),
+#         title = "Scatterplot Matrix of Transformed Data",
+#         progress = FALSE) +
+#   theme(
+#     plot.title = element_text(size = 20, face = "bold"),
+#     axis.title = element_text(size = 14),
+#     axis.text = element_text(size = 12),
+#     strip.text = element_text(size = 10)
+#   )
+
+# Adjust the plot size to ensure visibility
+# ggsave(filename = "scatterplot_matrix.png", plot = plot, width = 20, height = 15)
+# print(plot)
+```
+result rejects kurtosis, res accepts kurtosis...
+data is post process
+data3 is pre process
+data2 is post process, but different
+```{r}
+# Conduct Mardia's Test for multivariate normality
+result <- mvn(data = datan, mvnTest = "mardia", univariateTest = "SW")
+res <- mardia(datan)
+
+print(result)
+```
