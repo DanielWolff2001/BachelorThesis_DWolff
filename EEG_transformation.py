@@ -4,7 +4,7 @@ from scipy.stats import norm, rankdata
 from numpy.linalg import inv
 
 # Load the dataset
-file_path = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/eeg_sample_1000_c.csv'
+file_path = 'eeg_sample_1000_c.csv'
 data = pd.read_csv(file_path)
 
 # Compute variance for each column except the 'event' column
@@ -38,8 +38,8 @@ normal_data = uniform_data.apply(norm.ppf)
 EEG_1000_edited = normal_data
 EEG_1000_uniform = uniform_data
 # Save the DataFrame to a CSV file
-EEG_1000_edited.to_csv('/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_edited.csv', index=False)
-EEG_1000_uniform.to_csv('/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_uniform.csv', index=False)
+EEG_1000_edited.to_csv('EEG_1000_edited.csv', index=False)
+EEG_1000_uniform.to_csv('EEG_1000_uniform.csv', index=False)
 
 # Calculate the covariance matrix
 cov_matrix = normal_data.cov()
