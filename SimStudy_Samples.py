@@ -36,7 +36,7 @@ sample_sizes = [1000]
 num_samples_per_size = 100
 
 # Create directory to save CSV files if it does not exist
-output_dir = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples'
+output_dir = 'SimStudy_Samples'
 os.makedirs(output_dir, exist_ok=True)
 
 # Generate and save samples
