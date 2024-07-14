@@ -15,4 +15,4 @@ For the EEG-data processing and transformations the following scripts were used:
 4. HC_EEG.py: Performs Hierarchical Clustering on the EEG model with deleted edges.
 
 Other files:
-- bep3dmulti.Rmd: This file was used to created the examples throughout chapter 2 and 3.
+- bep3dmulti.Rmd: This file was used to create the examples throughout chapter 2 and 3.
