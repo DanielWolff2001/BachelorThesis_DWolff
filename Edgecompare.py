@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the CSV file from the specified path
-file_path = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/merged_model_results.csv'
+file_path = 'merged_model_results.csv'
 data = pd.read_csv(file_path)
 
 # Define the true edges (ignoring the tilde)
