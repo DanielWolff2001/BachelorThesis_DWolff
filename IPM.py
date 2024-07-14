@@ -64,7 +64,7 @@ def calculate_log_likelihood(C, A, W, n):
     return part1 + part2 - part3
 
 # Load the dataset
-file_path = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/gaussian3d_250samples.csv'
+file_path = 'gaussian3d_250samples.csv'
 sample = pd.read_csv(file_path).values
 size = sample.shape[1]  # Number of variables
 n = sample.shape[0]  # Number of observations
@@ -93,13 +93,6 @@ print("Final A:\n", A_final)
 print("Final C:\n", C_final)
 print('logL: ', calculate_log_likelihood(C_final, A_final, W, n))
 
-# plt.figure(figsize=(10, 6))
-# plt.plot(range(1, len(log_likelihoods) + 1), log_likelihoods, marker='o', linestyle='-', color='b')
-# plt.title('Log-Likelihood vs Iteration')
-# plt.xlabel('Iteration')
-# plt.ylabel('Log-Likelihood')
-# plt.grid(True)
-# plt.show()
 
 
 print(A_final@C_final@A_final)
