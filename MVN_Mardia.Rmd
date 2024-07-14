@@ -1,10 +1,3 @@
----
-title: "mvn mardia"
-author: "Daniel Wolff"
-date: "2024-07-08"
-output: pdf_document
----
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -20,15 +13,11 @@ library(stats)
 library(ggplot2)
 library(GGally)
 # Define the path to your CSV file
-# /Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/eeg_sample_1000_c.csv
-# /Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_uniform.csv
-# /Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_edited.csv
-file_path <- "/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EEG_1000_edited.csv"
-file_path2 <- "/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/eeg_sample_1000_c.csv"
-file_path3 <- "/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples/sample_size_1000_sample_57.csv"
+file_path <- "EEG_1000_edited.csv"
+file_path2 <- "eeg_sample_1000_c.csv"
+file_path3 <- "sample_size_1000_sample_57.csv"
 # Read the data
 data <- read_csv(file_path, show_col_types = FALSE)
-
 data2 <-read_csv(file_path2, show_col_types = FALSE)
 data3 <-read_csv(file_path2, show_col_types = FALSE)
 data2 <- data2 %>% select(-event)
