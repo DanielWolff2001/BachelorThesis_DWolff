@@ -4,8 +4,8 @@ import pandas as pd
 from sklearn.cluster import AgglomerativeClustering
 
 # Define the directory containing the K matrices
-input_dir = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/K_Matrices'
-output_dir = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Clustering_Results'
+input_dir = 'K_Matrices'
+output_dir = 'Clustering_Results'
 
 # Create the output directory if it doesn't exist
 os.makedirs(output_dir, exist_ok=True)
