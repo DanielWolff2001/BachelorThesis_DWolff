@@ -6,13 +6,13 @@ import time
 start_time = time.time()
 
 # Define the path to your text file
-file_path = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/EP1.01.txt'
+file_path = 'EP1.01.txt'
 
 # Read the text file
 df = pd.read_csv(file_path, sep='\t', header=None, names=['id', 'event', 'device', 'channel', 'code', 'size', 'data'])
 
 # Take the first 280 rows, which corresponds to 20 events with 14 channels each
-n_events = 500
+n_events = 1000
 n_rows = 14*n_events
 df_sample = df.iloc[:n_rows]
 
@@ -55,7 +55,7 @@ duration = end_time - start_time
 print(f"Processing time: {duration} seconds")
 
 # Save the processed DataFrame for further use
-pivot_df.to_csv('eeg_sample_500_c.csv', index=False)
+pivot_df.to_csv('eeg_sample_100_centered.csv', index=False)
 
 # Display the first few rows of the DataFrame
 print(pivot_df.head())
