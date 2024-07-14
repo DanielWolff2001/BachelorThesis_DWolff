@@ -1,10 +1,3 @@
----
-title: "bep3dmultivariate"
-author: "Daniel Wolff"
-date: "2024-04-30"
-output: html_document
----
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -12,8 +5,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(gRbase)
 library(gRc)
-# data <- read.csv('gaussian3d_250samples.csv', header = TRUE)
-data <- read.csv('/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/gaussian3d_250samples.csv', header = TRUE)
+data <- read.csv('gaussian3d_250samples.csv', header = TRUE)
 colnames(data) <- c('X1', 'X2', 'X3')
 ```
 
