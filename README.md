@@ -9,4 +9,5 @@ To create the simulation study, the following scripts were used in the given ord
 
 For the EEG-data processing and transformations the following scripts were used:
 1. EPOC_Data_Creation.py: This file reads the EP1.01.txt file which contains all of the EPOC data and processes the data to a dataframe we can work with.
-2. 
+2. (NOT ADDED YET) EEG_MBD.Rmd: Performs edge deletion and symmetry calculations on the dataframe.
+3. HC_EEG.py: Performs Hierarchical Clustering on the EEG model with deleted edges.
