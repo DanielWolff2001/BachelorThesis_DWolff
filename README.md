@@ -6,6 +6,11 @@ To create the simulation study, the following scripts were used in the given ord
 5. SimStudy_final.Rmd: Finds the log-likelihood and dimension of the final models. Will calculate the LR-statistic and calculate the p-value of accepting the model with symmetries against the model without symmetries. Also makes a summary of percentage of accepted models per threshold/sample size. saves to merged_model_results.csv
 6. Acceptance.py: Calculates how many VCC's are correctly found
 7. Edgecompare.py: Creates the tables on information for the edges found in the paper, such as total edges found, correct edges found, etc..
+8. FullSymmcompare.py: Calculates the number of accepted models.
+
+IMPORTANT FILES IN SIMULATION STUDY:
+- full_model_logL_results.csv, contains the logL of the full model, edge deletion model and both dimensions. also contains the p-values.
+- merged_model_results.csv, contains the logL of the symmetry model and edge deletion model and both dimensions. also tests them and finds the p-values. extracts information from final_model_results.csv
 
 For the EEG-data processing and transformations the following scripts were used:
 1. EPOC_Data_Creation.py: This file reads the EP1.01.txt file which contains all of the EPOC data and processes the data to a dataframe we can work with.
