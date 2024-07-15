@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the CSV file from the specified path
-file_path = 'merged_model_results.csv'
+file_path = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/merged_model_results.csv'
 data = pd.read_csv(file_path)
 
 # Define the true edges (ignoring the tilde)
@@ -148,3 +148,13 @@ print(correct_symmetries_summary)
 average_extra_edges = data.groupby(['sample_size', 'threshold_level'])['extra_edges'].mean()
 print("\nAverage number of extra edges per sample size and threshold level:")
 print(average_extra_edges)
+
+# Calculate total number of edges found and total correct edges found
+total_edges_found = data.groupby(['sample_size', 'threshold_level'])['total_edge_count'].sum()
+total_correct_edges_found = data.groupby(['sample_size', 'threshold_level'])['correct_edge_count'].sum()
+
+print("\nTotal number of edges found per sample size and threshold level:")
+print(total_edges_found)
+
+print("\nTotal number of correct edges found per sample size and threshold level:")
+print(total_correct_edges_found)
