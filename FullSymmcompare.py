@@ -2,9 +2,9 @@ import pandas as pd
 from scipy.stats import chi2
 
 # Define the file paths
-merged_model_results_file = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/merged_model_results.csv'
-full_model_logL_results_file = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/full_model_logL_results.csv'
-output_file = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/comparisonfullandsymm.csv'
+merged_model_results_file = 'merged_model_results.csv'
+full_model_logL_results_file = 'full_model_logL_results.csv'
+output_file = 'comparisonfullandsymm.csv'
 
 # Read the CSV files
 merged_model_results = pd.read_csv(merged_model_results_file)
@@ -47,7 +47,7 @@ for sample_size in summary['Sample Size'].unique():
         print(f"  Threshold {threshold}: {count} p-values > 0.01")
 
 # Load the CSV file
-merged_model_results_file = '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model/merged_model_results.csv'
+merged_model_results_file = 'merged_model_results.csv'
 merged_model_results = pd.read_csv(merged_model_results_file)
 
 # Extract sample size from the 'Sample' column
