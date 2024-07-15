@@ -8,13 +8,12 @@ library(gRc)
 library(stats)
 
 # Define the directory containing the CSV files
-input_dir <- 'SimStudy_Samples'
+input_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/SimStudy_Samples'
 
 # Define the output directories for saving the K matrices and logL values
-k_matrices_dir <- 'K_Matrices'
-logL_output_dir <- 'Final_Model'
-dimension_output_dir <- 'Final_Model'
-
+k_matrices_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/K_Matrices'
+logL_output_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
+dimension_output_dir <- '/Users/danielwolff/Library/Mobile Documents/com~apple~CloudDocs/TU/Jaar 3/BEP/Python/Final_Model'
 
 # Create the output directories if they do not exist
 if (!dir.exists(k_matrices_dir)) {
@@ -69,7 +68,7 @@ remove_deleted_edges <- function(eccfull, deleted_edges) {
   return(ecc_stepwise)
 }
 
-# Initialize a data frame to store logL values
+# Initialize data frames to store logL values
 logL_results <- data.frame(
   Sample = character(),
   LogL = numeric(),
@@ -82,6 +81,18 @@ dimension_results <- data.frame(
   stringsAsFactors = FALSE
 )
 
+full_model_logL_results <- data.frame(
+  Sample = character(),
+  FullModelLogL = numeric(),
+  UpdatedModelLogL = numeric(),
+  FullModelDimension = numeric(),
+  UpdatedModelDimension = numeric(),
+  LikelihoodRatio = numeric(),
+  df = numeric(),
+  p_value = numeric(),
+  stringsAsFactors = FALSE
+)
+
 # Function to perform the additional calculations on a dataset
 perform_calculations <- function(data, sample_size, sample_number) {
   S_dt <- cov.wt(data, method = 'ML')$cov
@@ -89,11 +100,17 @@ perform_calculations <- function(data, sample_size, sample_number) {
   PC_dt <- cov2pcor(S_dt)
   sat_dt <- cmod(~.^., data = data)
   
+  # Fit the full model and extract its logL and dimension
+  full_model <- rcox(vcc = vcc, ecc = eccfull, type = 'rcor', data = data)
+  full_model_summary <- summary(full_model, type = 'KC')
+  full_model_logL <- full_model_summary$logL
+  full_model_dimension <- full_model_summary$dimension
+  
   # Print the dataset name before performing stepwise selection
   cat(sprintf("Processing dataset: sample_size_%s_sample_%s\n", sample_size, sample_number))
   
   # Capture the output of the stepwise function
-  stepwise_output <- capture.output(stepwise(sat_dt, details = 1, search = "headlong", criterion = "test", steps = 1000, alpha = 0.05))
+  stepwise_output <- capture.output(stepwise(sat_dt, details = 1, search = "headlong", criterion = "test", steps = 1000, alpha = 0.01))
   
   # Parse the stepwise output to get the deleted edges
   deleted_edges <- parse_stepwise_output(stepwise_output)
@@ -102,24 +119,41 @@ perform_calculations <- function(data, sample_size, sample_number) {
   ecc_stepwise <- remove_deleted_edges(eccfull, deleted_edges)
   
   # Fit the model with the new ecc
-  m1 <- rcox(vcc = vcc, ecc = ecc_stepwise, type = 'rcor', data = data)
+  updated_model <- rcox(vcc = vcc, ecc = ecc_stepwise, type = 'rcor', data = data)
   
   # Extract the partial correlation matrix and logL from the summary
-  m1_summary <- summary(m1, type = 'KC')
-  partial_corr_matrix <- m1_summary$K
-  logL_value <- m1_summary$logL
-  dimension_value <- m1_summary$dimension
+  updated_model_summary <- summary(updated_model, type = 'KC')
+  partial_corr_matrix <- updated_model_summary$K
+  updated_model_logL <- updated_model_summary$logL
+  updated_model_dimension <- updated_model_summary$dimension
   
   # Save the partial correlation matrix as a CSV file
   output_file_path <- file.path(k_matrices_dir, paste0("K_matrix_", sample_size, "_", sample_number, ".csv"))
   write.csv(partial_corr_matrix, output_file_path, row.names = TRUE)
   
   # Add logL and dimension values to the respective results data frames
-  logL_results <<- rbind(logL_results, data.frame(Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), LogL = logL_value))
-  dimension_results <<- rbind(dimension_results, data.frame(Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), Dimension = dimension_value))
+  logL_results <<- rbind(logL_results, data.frame(Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), LogL = updated_model_logL))
+  dimension_results <<- rbind(dimension_results, data.frame(Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), Dimension = updated_model_dimension))
   
-  # Print message to confirm saving the files
-  cat(sprintf("Saved K matrix to %s\n", output_file_path))
+  # Calculate likelihood ratio and p-value
+  likelihood_ratio <- -2 * ( updated_model_logL - full_model_logL)
+  df <- full_model_dimension - updated_model_dimension
+  p_value <- pchisq(likelihood_ratio, df = df, lower.tail = FALSE)
+  
+  # Add the full model and updated model logL values, dimensions, and likelihood ratio test results
+  full_model_logL_results <<- rbind(full_model_logL_results, data.frame(
+    Sample = paste0("sample_size_", sample_size, "_sample_", sample_number), 
+    FullModelLogL = full_model_logL, 
+    UpdatedModelLogL = updated_model_logL,
+    FullModelDimension = full_model_dimension,
+    UpdatedModelDimension = updated_model_dimension,
+    LikelihoodRatio = likelihood_ratio,
+    df = df,
+    p_value = p_value
+  ))
+  
+  # # Print message to confirm saving the files
+  # cat(sprintf("Saved K matrix to %s\n", output_file_path))
 }
 
 # Read each CSV file, set column names, and perform calculations
@@ -138,12 +172,26 @@ for (file_path in csv_files) {
 # Save the logL results to a single CSV file
 logL_results_file <- file.path(logL_output_dir, "logL_results.csv")
 write.csv(logL_results, logL_results_file, row.names = FALSE)
+
 # Save the dimension results to a single CSV file
 dimension_results_file <- file.path(dimension_output_dir, "dimension_results.csv")
 write.csv(dimension_results, dimension_results_file, row.names = FALSE)
 
+# Save the full model logL results to a single CSV file
+full_model_logL_results_file <- file.path(logL_output_dir, "full_model_logL_results.csv")
+write.csv(full_model_logL_results, full_model_logL_results_file, row.names = FALSE)
+
+p_value_threshold <- 0.01
+sample_sizes <- unique(sub("sample_size_(\\d+)_sample_\\d+.csv", "\\1", basename(csv_files)))
+
+for (size in sample_sizes) {
+    num_samples_above_threshold <- sum(full_model_logL_results$p_value[grepl(paste0("sample_size_", size, "_"), full_model_logL_results$Sample)] > p_value_threshold)
+  cat(sprintf("Sample size %s: %d samples have a p-value > %.2f\n", size, num_samples_above_threshold, p_value_threshold))
+}
 
 cat("Calculations completed for all datasets successfully.\n")
 cat("LogL results saved to", logL_results_file, "\n")
+cat("Dimension results saved to", dimension_results_file, "\n")
+cat("Full model logL results saved to", full_model_logL_results_file, "\n")
 cat("Dimension results saved to", dimension_results_file, "\n")
 ```
